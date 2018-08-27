@@ -53,6 +53,32 @@ data.after_dig_node = function (pos, node)
 	minetest.set_node(vector.add(pos, dir), {name = "air"})
 end
 
+data.on_rotate = function (pos, node, user, mode, new_param2)
+	data.after_dig_node(pos, node)
+	
+	node.param2 = new_param2 % 4
+	
+	local facedir = node.param2
+	
+	local dir = minetest.facedir_to_dir(facedir)
+	dir = {x = dir.z, y = dir.y, z = -dir.x}
+	
+	local right_pos = vector.add(pos, dir)
+	local right_node = minetest.get_node(right_pos)
+	
+	local right_def = minetest.registered_nodes[right_node.name] or {}
+	
+	if right_node.name ~= "air" and not right_def.buildable_to or minetest.is_protected(right_pos, placer and placer:get_player_name() or "") then
+		minetest.dig_node(pos)
+		return false
+	end
+	
+	minetest.set_node(pos, node)
+	data.after_place_node(pos, user)
+	
+	return true
+end
+
 data.inventory_image = "widescreents_ts_inv.png"
 data.wield_image = "widescreents_ts_front.png"
 
