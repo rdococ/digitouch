@@ -27,8 +27,11 @@ data.after_place_node = function (pos, placer)
 	dir = {x = dir.z, y = dir.y, z = -dir.x}
 	
 	local right_pos = vector.add(pos, dir)
+	local right_node = minetest.get_node(right_pos)
 	
-	if minetest.get_node(right_pos).name ~= "air" or minetest.is_protected(right_pos, placer and placer:get_player_name() or "") then
+	local right_def = minetest.registered_nodes[right_node.name] or {}
+	
+	if right_node.name ~= "air" and not right_def.buildable_to or minetest.is_protected(right_pos, placer and placer:get_player_name() or "") then
 		minetest.dig_node(pos)
 		return
 	end
@@ -43,7 +46,7 @@ data.after_dig_node = function (pos, node)
 	
 	local right_pos = vector.add(pos, dir)
 	
-	if minetest.get_node(right_pos).name ~= "widescreents:touchscreen_right" then
+	if minetest.get_node(right_pos).name ~= "widescreents:touchscreen_right" or minetest.get_node(right_pos).param2 ~= facedir then
 		return
 	end
 	
