@@ -13,6 +13,54 @@ local function on_close_formspec(name)
 	end
 end
 
+local function sync(itemstack, player, pointed)
+	local player_name = player and player:get_player_name() or ""
+	local item_meta = itemstack:get_meta()
+	
+	local pos_string = item_meta:get_string("position")
+	
+	local pos = minetest.string_to_pos(pos_string)
+	
+	if not pos then
+		minetest.chat_send_player(player_name, "You haven't synced this remote yet.")
+		return
+	end
+	
+	minetest.forceload_block(pos, true)
+	
+	local node = minetest.get_node(pos)
+	local def = minetest.registered_nodes[node.name]
+	local meta = minetest.get_meta(pos)
+	
+	if minetest.is_protected(pos, player_name) then
+		minetest.chat_send_player(player_name, "The synced touchscreen has been protected.")
+		minetest.forceload_free_block(pos, true)
+		return
+	end
+	
+	if not def then return end
+	
+	-- if it's not a touchscreen (wide or not), return
+	if node.name ~= "digistuff:touchscreen" and node.name ~= "digitouch:widescreen" then
+		if node.name == "ignore" then
+			minetest.chat_send_player(player_name, "The synced touchscreen is not loaded yet. Trying to forceload it - try again in a few seconds.")
+			return
+		end
+		
+		minetest.chat_send_player(player_name, "The synced touchscreen no longer exists.")
+		formspec_names[pos_string] = nil
+		minetest.forceload_free_block(pos, true)
+		return
+	end
+	
+	formspec_positions[player_name] = pos_string
+	
+	formspec_names[pos_string] = formspec_names[pos_string] or {}
+	formspec_names[pos_string][player_name] = true
+	
+	minetest.show_formspec(player_name, "digitouch:" .. pos_string, meta:get_string("formspec"))
+end
+
 minetest.register_craftitem("digitouch:remote", {
 	inventory_image = "digitouch_remote.png",
 	description = "Digitouch Remote (shift+right-click to sync to a touchscreen)",
@@ -52,53 +100,8 @@ minetest.register_craftitem("digitouch:remote", {
 		
 		return itemstack
 	end,
-	on_secondary_use = function (itemstack, player, pointed)
-		local player_name = player and player:get_player_name() or ""
-		local item_meta = itemstack:get_meta()
-		
-		local pos_string = item_meta:get_string("position")
-		
-		local pos = minetest.string_to_pos(pos_string)
-		
-		if not pos then
-			minetest.chat_send_player(player_name, "You haven't synced this remote yet.")
-			return
-		end
-		
-		minetest.forceload_block(pos, true)
-		
-		local node = minetest.get_node(pos)
-		local def = minetest.registered_nodes[node.name]
-		local meta = minetest.get_meta(pos)
-		
-		if minetest.is_protected(pos, player_name) then
-			minetest.chat_send_player(player_name, "The synced touchscreen has been protected.")
-			minetest.forceload_free_block(pos, true)
-			return
-		end
-		
-		if not def then return end
-		
-		-- if it's not a touchscreen (wide or not), return
-		if node.name ~= "digistuff:touchscreen" and node.name ~= "digitouch:widescreen" then
-			if node.name == "ignore" then
-				minetest.chat_send_player(player_name, "The synced touchscreen is not loaded yet. Trying to forceload it - try again in a few seconds.")
-				return
-			end
-			
-			minetest.chat_send_player(player_name, "The synced touchscreen no longer exists.")
-			formspec_names[pos_string] = nil
-			minetest.forceload_free_block(pos, true)
-			return
-		end
-		
-		formspec_positions[player_name] = pos_string
-		
-		formspec_names[pos_string] = formspec_names[pos_string] or {}
-		formspec_names[pos_string][player_name] = true
-		
-		minetest.show_formspec(player_name, "digitouch:" .. pos_string, meta:get_string("formspec"))
-	end
+	on_secondary_use = sync,
+	on_place = sync
 })
 
 minetest.register_on_player_receive_fields(function (player, formname, fields)
@@ -132,7 +135,11 @@ end)
 
 minetest.register_on_leaveplayer(function (player)
 	local name = player and player:get_player_name() or ""
-	
+	on_close_formspec(name)
+end)
+
+minetest.register_on_dieplayer(function (player)
+	local name = player and player:get_player_name() or ""
 	on_close_formspec(name)
 end)
 
