@@ -1,6 +1,18 @@
 -- unsure if this is necessary
 local formspec_positions, formspec_names = {}, {}
 
+local function on_close_formspec(name)
+	local pos_string = formspec_positions[name]
+	local pos = minetest.string_to_pos(pos_string)
+	
+	formspec_positions[name] = nil
+	formspec_names[pos_string][name] = nil
+	
+	if #formspec_names[pos_string] == 0 then
+		minetest.forceload_free_block(pos, true)
+	end
+end
+
 minetest.register_craftitem("digitouch:remote", {
 	inventory_image = "digitouch_remote.png",
 	description = "Digitouch Remote (shift+right-click to sync to a touchscreen)",
@@ -25,7 +37,10 @@ minetest.register_craftitem("digitouch:remote", {
 		if not def then return end
 		
 		-- if it's not a touchscreen (wide or not), return
-		if node.name ~= "digistuff:touchscreen" and node.name ~= "digitouch:widescreen" then return end
+		if node.name ~= "digistuff:touchscreen" and node.name ~= "digitouch:widescreen" then
+			minetest.chat_send_player(player_name, "You can only sync with touchscreens.")
+			return
+		end
 		
 		local item_meta = itemstack:get_meta()
 		
@@ -89,6 +104,9 @@ minetest.register_craftitem("digitouch:remote", {
 minetest.register_on_player_receive_fields(function (player, formname, fields)
 	local name = player and player:get_player_name() or ""
 	
+	if type(formname) ~= "string" then return end
+	if type(fields) ~= "table" then return end
+	
 	local pos_string = formname:sub(("digitouch:"):len() + 1, -1)
 	local pos = minetest.string_to_pos(pos_string)
 	
@@ -99,26 +117,14 @@ minetest.register_on_player_receive_fields(function (player, formname, fields)
 	local meta = minetest.get_meta(pos)
 	
 	if node.name ~= "digistuff:touchscreen" and node.name ~= "digitouch:widescreen" then
-		minetest.chat_send_player(player_name, "The synced touchscreen was destroyed while you were using it.")
-		
-		formspec_positions[name] = nil
-		formspec_names[pos_string] = nil
-		
-		minetest.forceload_free_block(pos, true)
-		minetest.clear_formspec(name, formname)
+		minetest.chat_send_player(name, "The synced touchscreen was destroyed while you were using it.")
+		on_close_formspec(name)
 		
 		return
 	end
 	
 	if fields.quit then
-		local pos = minetest.string_to_pos(formspec_positions[name])
-		
-		formspec_positions[name] = nil
-		formspec_names[pos_string][name] = nil
-		
-		if #formspec_names[pos_string] == 0 then
-			minetest.forceload_free_block(pos, true)
-		end
+		on_close_formspec(name)
 	end
 	
 	digistuff.ts_on_receive_fields(pos, formname, fields, player)
@@ -127,14 +133,7 @@ end)
 minetest.register_on_leaveplayer(function (player)
 	local name = player and player:get_player_name() or ""
 	
-	local pos = minetest.string_to_pos(formspec_positions[name])
-	
-	formspec_positions[name] = nil
-	formspec_names[pos_string][name] = nil
-	
-	if #formspec_names[pos_string] == 0 then
-		minetest.forceload_free_block(pos, true)
-	end
+	on_close_formspec(name)
 end)
 
 local old_update_ts_formspec = digistuff.update_ts_formspec
