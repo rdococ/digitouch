@@ -116,7 +116,9 @@ digistuff.update_ts_formspec = function (pos)
 	if name ~= "digitouch:widescreen" then return res end
 	
 	local formspec = meta:get_string("formspec")
-	meta:set_string("formspec", "size[16, 9]" .. formspec:sub(11, -1))
+	meta:set_string("formspec", "size[16, 9]" ..
+		"background[0,0;0,0;digitouch_widescreen_bg.png;true]" ..
+		formspec:sub(("size[10,8]background[0,0;0,0;digistuff_ts_bg.png;true]"):len() + 1, -1))
 	return res
 end
 
