@@ -140,7 +140,10 @@ end)
 
 minetest.register_on_dieplayer(function (player)
 	local name = player and player:get_player_name() or ""
-	on_close_formspec(name)
+	
+	if formspec_positions[name] then
+		on_close_formspec(name)
+	end
 end)
 
 local old_update_ts_formspec = digistuff.update_ts_formspec
