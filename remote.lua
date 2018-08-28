@@ -17,8 +17,8 @@ minetest.register_craftitem("digitouch:remote", {
 	inventory_image = "digitouch_remote.png",
 	description = "Digitouch Remote (shift+right-click to sync to a touchscreen)",
 	
-	on_place = function (itemstack, player, pointed)
-		-- right-click to connect remote to a touchscreen if the area is not protected
+	on_use = function (itemstack, player, pointed)
+		-- left-click to connect remote to a touchscreen if the area is not protected
 		local player_name = player and player:get_player_name() or ""
 		
 		-- touchscreens are nodes
@@ -52,7 +52,7 @@ minetest.register_craftitem("digitouch:remote", {
 		
 		return itemstack
 	end,
-	on_use = function (itemstack, player, pointed)
+	on_secondary_use = function (itemstack, player, pointed)
 		local player_name = player and player:get_player_name() or ""
 		local item_meta = itemstack:get_meta()
 		
