@@ -3,6 +3,8 @@ local formspec_positions, formspec_names = {}, {}
 
 local function on_close_formspec(name)
 	local pos_string = formspec_positions[name]
+	if not pos_string then return end
+	
 	local pos = minetest.string_to_pos(pos_string)
 	
 	formspec_positions[name] = nil
