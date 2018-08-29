@@ -8,6 +8,8 @@ local function on_close_formspec(name)
 	local pos = minetest.string_to_pos(pos_string)
 	
 	formspec_positions[name] = nil
+	if not formspec_names[pos_string] then return end
+	
 	formspec_names[pos_string][name] = nil
 	
 	if #formspec_names[pos_string] == 0 then
@@ -145,7 +147,10 @@ end)
 
 minetest.register_on_leaveplayer(function (player)
 	local name = player and player:get_player_name() or ""
-	on_close_formspec(name)
+	
+	if formspec_positions[name] then
+		on_close_formspec(name)
+	end
 end)
 
 minetest.register_on_dieplayer(function (player)
