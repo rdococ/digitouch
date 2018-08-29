@@ -67,7 +67,6 @@ local function sync(itemstack, player, pointed)
 	
 	-- touchscreens are nodes
 	if pointed.type ~= "node" then
-		minetest.chat_send_player(player_name, "You can only sync with touchscreens.")
 		return
 	end
 	
@@ -76,17 +75,16 @@ local function sync(itemstack, player, pointed)
 	local node = minetest.get_node(pos)
 	local def = minetest.registered_nodes[node.name]
 	
-	if minetest.is_protected(pos, player_name) then
-		minetest.register_protection_violation(pos, player_name)
-		return
-	end
-	
 	if not def then return end
 	
 	-- if it's not a touchscreen (wide or not), return
 	if node.name ~= "digistuff:touchscreen" and node.name ~= "digitouch:widescreen" then
-		minetest.chat_send_player(player_name, "You can only sync with touchscreens.")
 		return
+	end
+	
+	if minetest.is_protected(pos, player_name) then
+		minetest.register_protection_violation(pos, player_name)
+		return true
 	end
 	
 	local item_meta = itemstack:get_meta()
@@ -99,15 +97,19 @@ local function sync(itemstack, player, pointed)
 	
 	return itemstack
 end
+
+local function sync_or_use(...)
+	return sync(...) or use(...)
+end
 	
 minetest.register_craftitem("digitouch:remote", {
 	inventory_image = "digitouch_remote.png",
-	description = "Digitouch Remote (shift+right-click to sync to a touchscreen, left-click to use)",
+	description = "Digitouch Remote (shift+right-click a touchscreen)",
 	
 	on_use = use,
 	
-	on_secondary_use = sync,
-	on_place = sync
+	on_secondary_use = sync_or_use,
+	on_place = sync_or_use
 })
 
 minetest.register_on_player_receive_fields(function (player, formname, fields)
